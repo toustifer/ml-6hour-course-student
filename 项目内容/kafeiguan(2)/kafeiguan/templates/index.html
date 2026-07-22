@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>☕ 咖啡馆营收分析系统</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#f8f4f0;color:#2c2c2c}
+.topbar{background:linear-gradient(135deg,#3d2a1e,#6f4e37);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.1)}
+.topbar h1{color:#fff;font-size:17px;font-weight:700;letter-spacing:1px}
+.nav{display:flex;gap:2px}
+.nav a{padding:6px 14px;font-size:12px;color:rgba(255,255,255,.6);text-decoration:none;border-radius:6px 6px 0 0;transition:all .2s}
+.nav a:hover,.nav a.active{background:rgba(255,255,255,.1);color:#fff}
+.page{display:none;padding:16px 20px;max-width:1400px;margin:0 auto}
+.page.active{display:block}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
+.stat-card{background:#fff;border-radius:10px;padding:14px 10px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.04);border:1px solid rgba(255,255,255,.6)}
+.stat-card .num{font-size:22px;font-weight:700;color:#6f4e37}
+.stat-card .label{font-size:11px;color:#999;margin-top:1px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.04);border:1px solid rgba(255,255,255,.6)}
+.card.full{grid-column:1/-1}
+.card h3{font-size:13px;color:#4a3528;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.card h3 small{font-size:10px;color:#999;font-weight:400;margin-left:auto}
+.chart{height:340px;width:100%}
+.chart-md{height:280px;width:100%}
+.chart-sm{height:230px;width:100%}
+.chart-xs{height:200px;width:100%}
+.btn{padding:8px 20px;border:none;border-radius:8px;font-size:13px;cursor:pointer;transition:all .2s}
+.btn-primary{background:#6f4e37;color:#fff}
+.btn-primary:hover{background:#4a3528}
+.btn-primary:disabled{background:#ccc;cursor:not-allowed}
+.btn-sm{padding:5px 12px;font-size:11px}
+.input-group{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.input-group label{font-size:11px;color:#888;min-width:80px}
+.input-group input,.input-group select{padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;outline:none;font-family:inherit;width:120px}
+.input-group input:focus,.input-group select:focus{border-color:#8b6f59}
+.tabs{display:flex;gap:2px;margin-bottom:8px}
+.tab{padding:5px 14px;font-size:11px;background:#f0ebe6;color:#888;border-radius:6px 6px 0 0;cursor:pointer;transition:all .2s}
+.tab.active{background:#fff;color:#4a3528;font-weight:600;border:1px solid #eee;border-bottom:1px solid #fff}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.form-panel{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+.form-group{display:flex;flex-direction:column;gap:2px}
+.form-group label{font-size:11px;color:#666}
+.form-group input{padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;outline:none}
+.form-group input:focus{border-color:#8b6f59}
+.result-box{background:#f0ebe6;border-radius:10px;padding:16px;text-align:center;margin-top:10px}
+.result-box .big{font-size:28px;font-weight:700;color:#6f4e37}
+.result-box .sub{font-size:11px;color:#888;margin-top:4px}
+.alert{padding:8px 12px;border-radius:6px;font-size:12px;margin:8px 0}
+.alert-error{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
+.alert-success{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0}
+.alert-info{background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe}
+.table-wrap{max-height:350px;overflow-y:auto;border:1px solid #f0ebe6;border-radius:6px}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{background:#f0ebe6;color:#4a3528;padding:6px 8px;text-align:left;font-weight:600;position:sticky;top:0}
+td{padding:5px 8px;border-bottom:1px solid #f0ebe6;color:#555}
+tr:hover td{background:#faf6f2}
+.loading{display:inline-block;width:16px;height:16px;border:2px solid #ddd;border-top-color:#6f4e37;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;top:16px;right:16px;padding:10px 16px;border-radius:8px;font-size:12px;z-index:999;animation:fadeIn .3s;box-shadow:0 4px 12px rgba(0,0,0,.1)}
+.toast-success{background:#16a34a;color:#fff}
+.toast-error{background:#dc2626;color:#fff}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+.pagination{display:flex;gap:6px;align-items:center;margin-top:8px;font-size:11px}
+.pagination button{padding:4px 10px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;font-size:11px}
+.pagination button:hover{background:#f0ebe6}
+.pagination button:disabled{color:#ccc;cursor:default}
+.pagination span{color:#888}
+@media(max-width:900px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(3,1fr)}.form-panel{grid-template-columns:1fr}}@media(max-width:500px){.stats{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>☕ 咖啡馆营收数据分析系统</h1>
+  <nav class="nav">
+    <a href="#" class="active" onclick="showPage('home',this)">首页</a>
+    <a href="#" onclick="showPage('data',this)">数据</a>
+    <a href="#" onclick="showPage('visual',this)">可视化</a>
+    <a href="#" onclick="showPage('train',this)">训练</a>
+    <a href="#" onclick="showPage('predict',this)">预测</a>
+  </nav>
+</div>
+
+<!-- ============ 首页 ============ -->
+<div class="page active" id="page-home">
+  <div class="stats" id="homeStats"></div>
+  <div class="grid">
+    <div class="card full">
+      <h3>📈 系统功能总览</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:6px">
+        <div style="background:#f0ebe6;border-radius:8px;padding:12px"><b style="color:#6f4e37">📊 数据总览</b><p style="font-size:11px;color:#888;margin-top:4px">查看原始经营数据，支持筛选排序与分页</p></div>
+        <div style="background:#f0ebe6;border-radius:8px;padding:12px"><b style="color:#6f4e37">📈 可视化看板</b><p style="font-size:11px;color:#888;margin-top:4px">营收趋势、特征重要性、客流相关性、品类占比</p></div>
+        <div style="background:#f0ebe6;border-radius:8px;padding:12px"><b style="color:#6f4e37">🌲 随机森林</b><p style="font-size:11px;color:#888;margin-top:4px">一键训练模型，输出R²/MSE，自动分析特征重要性</p></div>
+        <div style="background:#f0ebe6;border-radius:8px;padding:12px"><b style="color:#6f4e37">🎯 营收预测</b><p style="font-size:11px;color:#888;margin-top:4px">输入经营参数，预测单日营收，获取优化建议</p></div>
+      </div>
+    </div>
+    <div class="card full">
+      <h3>📋 数据集概览</h3>
+      <div id="homeDataPreview"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 数据页 ============ -->
+<div class="page" id="page-data">
+  <div class="card full">
+    <h3>📊 原始经营数据 <small id="dataTotal"></small></h3>
+    <div class="input-group">
+      <label>搜索:</label><input id="dataSearch" placeholder="搜索..." oninput="loadData()" style="width:160px">
+      <label>排序:</label>
+      <select id="dataSort" onchange="loadData()">
+        <option value="">默认</option><option value="revenue">按营收</option><option value="traffic">按客流</option>
+      </select>
+      <label>顺序:</label>
+      <select id="dataOrder" onchange="loadData()"><option value="desc">降序</option><option value="asc">升序</option></select>
+    </div>
+    <div class="table-wrap"><table id="dataTable"><thead id="dataThead"></thead><tbody id="dataTbody"></tbody></table></div>
+    <div class="pagination" id="dataPagination"></div>
+  </div>
+</div>
+
+<!-- ============ 可视化页 ============ -->
+<div class="page" id="page-visual">
+  <div class="grid">
+    <div class="card full"><h3>📈 每日营收趋势</h3><div class="chart" id="chartRevenue"></div></div>
+    <div class="card"><h3>🌲 特征重要性</h3><div class="chart-md" id="chartImportance"></div></div>
+    <div class="card"><h3>🔗 客流-营收相关性</h3><div class="chart-md" id="chartScatter"></div></div>
+  </div>
+</div>
+
+<!-- ============ 训练页 ============ -->
+<div class="page" id="page-train">
+  <div class="card full">
+    <h3>🌲 随机森林模型训练</h3>
+    <p style="font-size:12px;color:#888;margin-bottom:10px">基于{{特征列}}个经营特征，训练随机森林回归模型预测门店营收</p>
+    <button class="btn btn-primary" id="trainBtn" onclick="startTrain()">🚀 开始训练</button>
+    <div id="trainResult" style="margin-top:12px;display:none"></div>
+  </div>
+  <div class="card full" id="trainChartCard" style="display:none">
+    <h3>📊 预测效果对比 <small>真实值 vs 预测值</small></h3>
+    <div class="chart" id="chartTrainResult"></div>
+  </div>
+</div>
+
+<!-- ============ 预测页 ============ -->
+<div class="page" id="page-predict">
+  <div class="card full">
+    <h3>🎯 营收预测</h3>
+    <p style="font-size:12px;color:#888;margin-bottom:8px">输入经营参数，调用随机森林模型预测单日营收</p>
+    <div class="form-panel" id="predictForm"></div>
+    <button class="btn btn-primary" onclick="doPredict()">📊 预测营收</button>
+    <div id="predictResult" style="margin-top:12px;display:none"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+<script>
+var dataPage = 1, trainDone = false;
+
+// ============ 页面切换 ============
+function showPage(id,el){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active')});
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.nav a').forEach(function(a){a.classList.remove('active')});
+  if(el) el.classList.add('active');
+  setTimeout(function(){document.querySelectorAll('.chart,.chart-md,.chart-sm,.chart-xs').forEach(function(c){var i=echarts.getInstanceByDom(c);if(i)i.resize()})},100);
+  if(id==='home') loadHome();
+  if(id==='data') loadData();
+  if(id==='visual') loadVisual();
+  if(id==='predict') loadPredictForm();
+}
+
+// ============ Toast ============
+function toast(msg,type){
+  var t=document.createElement('div');t.className='toast toast-'+type;t.textContent=msg;
+  document.body.appendChild(t);setTimeout(function(){t.remove()},2500);
+}
+
+// ============ 首页 ============
+function loadHome(){
+  fetch('/api/data/summary').then(function(r){return r.json()}).then(function(d){
+    document.getElementById('homeStats').innerHTML=[
+      {n:d.total_days,l:'分析天数'},{n:d.avg_revenue.toLocaleString(),l:'日均营收(元)'},
+      {n:d.max_revenue.toLocaleString(),l:'最高营收(元)'},{n:d.avg_traffic,l:'日均客流量'},
+      {n:d.avg_cost.toLocaleString(),l:'平均成本(元)'},
+    ].map(function(x){return '<div class="stat-card"><div class="num">'+x.n+'</div><div class="label">'+x.l+'</div></div>'}).join('');
+  });
+  fetch('/api/data/table?page=1&size=8').then(function(r){return r.json()}).then(function(d){
+    if(!d.rows.length){document.getElementById('homeDataPreview').innerHTML='<span style="color:#888;font-size:12px">暂无数据</span>';return}
+    var cols=Object.keys(d.rows[0]);
+    var html='<div class="table-wrap"><table><thead><tr>'+cols.map(function(c){return '<th>'+c+'</th>'}).join('')+'</tr></thead><tbody>';
+    d.rows.forEach(function(r){html+='<tr>'+cols.map(function(c){return '<td>'+(r[c]??'')+'</td>'}).join('')+'</tr>'});
+    html+='</tbody></table></div>';
+    document.getElementById('homeDataPreview').innerHTML=html;
+  });
+}
+
+// ============ 数据页 ============
+function loadData(){
+  var sort=document.getElementById('dataSort').value;
+  var order=document.getElementById('dataOrder').value;
+  fetch('/api/data/table?page='+dataPage+'&size=20&sort='+sort+'&order='+order).then(function(r){return r.json()}).then(function(d){
+    document.getElementById('dataTotal').textContent='共 '+d.total+' 条';
+    if(!d.rows.length){document.getElementById('dataTbody').innerHTML='<tr><td colspan="10" style="text-align:center;color:#888;padding:20px">无数据</td></tr>';return}
+    var cols=Object.keys(d.rows[0]);
+    document.getElementById('dataThead').innerHTML='<tr>'+cols.map(function(c){return '<th>'+c+'</th>'}).join('')+'</tr>';
+    var html='';
+    var kw=document.getElementById('dataSearch').value.toLowerCase();
+    d.rows.forEach(function(r){
+      var vals=cols.map(function(c){v=r[c];return (v??'')+''});
+      html+='<tr>'+cols.map(function(c,i){var v=r[c];return '<td>'+(v??'')+'</td>'}).join('')+'</tr>';
+    });
+    document.getElementById('dataTbody').innerHTML=html;
+    var totalPages=Math.ceil(d.total/d.size);
+    document.getElementById('dataPagination').innerHTML=
+      '<button onclick="dataPage=1;loadData()" '+(dataPage<=1?'disabled':'')+'>首页</button>'+
+      '<button onclick="dataPage=Math.max(1,dataPage-1);loadData()" '+(dataPage<=1?'disabled':'')+'>上一页</button>'+
+      '<span>第 '+dataPage+'/'+totalPages+' 页</span>'+
+      '<button onclick="dataPage=Math.min('+totalPages+',dataPage+1);loadData()" '+(dataPage>=totalPages?'disabled':'')+'>下一页</button>'+
+      '<button onclick="dataPage='+totalPages+';loadData()" '+(dataPage>=totalPages?'disabled':'')+'>末页</button>';
+  });
+}
+
+// ============ 可视化 ============
+function loadVisual(){
+  fetch('/api/data/overview').then(function(r){return r.json()}).then(function(d){
+    if(d.daily_revenue.length){
+      var labels=d.daily_revenue.map(function(x){return x.date});
+      var vals=d.daily_revenue.map(function(x){return x.value});
+      echarts.init(document.getElementById('chartRevenue')).setOption({
+        tooltip:{trigger:'axis'},
+        grid:{left:60,right:20,bottom:25,top:10},legend:{data:['日营收'],bottom:0,textStyle:{fontSize:10}},
+        xAxis:{type:'category',data:labels,axisLabel:{fontSize:9,color:'#888',interval:19}},
+        yAxis:{type:'value',axisLabel:{fontSize:9,color:'#888'},splitLine:{lineStyle:{color:'#f0ebe6'}}},
+        series:[{name:'日营收',type:'line',data:vals,lineStyle:{color:'#6f4e37',width:2},areaStyle:{color:'rgba(111,78,55,0.08)'},smooth:true,
+          markLine:{data:[{type:'average'}],lineStyle:{color:'#d4a56a',type:'dashed'},label:{fontSize:9,color:'#8b6f59'}}}]
+      });
+    }
+  });
+  fetch('/api/train',{method:'POST'}).then(function(r){return r.json()}).then(function(d){
+    if(d.status==='success'){
+      var imp=d.importance.slice().reverse();
+      echarts.init(document.getElementById('chartImportance')).setOption({
+        tooltip:{trigger:'axis',axisPointer:{type:'shadow'}},
+        grid:{left:110,right:20,bottom:20,top:5},
+        xAxis:{type:'value',axisLabel:{fontSize:9,color:'#888',formatter:'{value}%'},splitLine:{lineStyle:{color:'#f0ebe6'}}},
+        yAxis:{type:'category',data:imp.map(function(x){return x.feature}),axisLabel:{fontSize:10,color:'#555'}},
+        series:[{type:'bar',data:imp.map(function(x,i){return +(x.importance*100).toFixed(1)}),barWidth:'55%',
+          itemStyle:{color:['#6f4e37','#8b6f59','#a0896b','#c4a882','#d4a56a','#e0b97e','#f0d5b0','#b8a090','#9a8a7a','#7a6a5a']},
+          label:{show:true,position:'right',fontSize:9,color:'#6f4e37',formatter:'{c}%'}}]
+      });
+    }
+  });
+  fetch('/api/data/scatter').then(function(r){return r.json()}).then(function(d){
+    if(d.data.length){
+      echarts.init(document.getElementById('chartScatter')).setOption({
+        tooltip:{trigger:'item',formatter:function(p){return '客流: '+p.value[0]+'<br/>营收: '+p.value[1]+' 元'}},
+        grid:{left:60,right:20,bottom:25,top:5},
+        xAxis:{type:'value',name:'客流量',nameTextStyle:{fontSize:10},axisLabel:{fontSize:9,color:'#888'}},
+        yAxis:{type:'value',name:'营收',nameTextStyle:{fontSize:10},axisLabel:{fontSize:9,color:'#888'},splitLine:{lineStyle:{color:'#f0ebe6'}}},
+        series:[{type:'scatter',data:d.data.map(function(x){return [x.traffic,x.revenue]}),symbolSize:6,
+          itemStyle:{color:'rgba(111,78,55,0.5)'}}]
+      });
+    }
+  });
+}
+
+// ============ 训练 ============
+function startTrain(){
+  var btn=document.getElementById('trainBtn');
+  btn.disabled=true;btn.innerHTML='<span class="loading"></span> 训练中...';
+  document.getElementById('trainResult').style.display='none';
+  fetch('/api/train',{method:'POST'}).then(function(r){return r.json()}).then(function(d){
+    btn.disabled=false;btn.innerHTML='🚀 重新训练';
+    if(d.status==='success'){
+      trainDone=true;
+      document.getElementById('trainResult').style.display='block';
+      document.getElementById('trainResult').innerHTML=
+        '<div class="alert alert-success">✅ 训练完成！R² = '+d.r2+' | MSE = '+d.mse+'</div>'+
+        '<div class="stats" style="grid-template-columns:repeat(4,1fr);margin-top:6px">'+
+        '<div class="stat-card"><div class="num">'+d.r2+'</div><div class="label">R² 拟合度</div></div>'+
+        '<div class="stat-card"><div class="num">'+d.mse+'</div><div class="label">均方误差 MSE</div></div>'+
+        '<div class="stat-card"><div class="num">'+(d.importance.length)+'</div><div class="label">特征数</div></div>'+
+        '<div class="stat-card"><div class="num">'+(d.r2*100-65).toFixed(1)+'%</div><div class="label">预测准确率估算</div></div>'+
+        '</div>'+
+        '<div style="margin-top:8px"><b style="font-size:12px;color:#4a3528">特征重要性:</b>'+
+        d.importance.map(function(x,i){return '<span style="display:inline-block;background:#f0ebe6;border-radius:12px;padding:2px 10px;font-size:11px;color:#555;margin:3px">'+(i+1)+'. '+x.feature+' <b>'+(x.importance*100).toFixed(1)+'%</b></span>'}).join('')+
+        '</div>';
+      document.getElementById('trainChartCard').style.display='block';
+      if(d.y_true&&d.y_pred){
+        echarts.init(document.getElementById('chartTrainResult')).setOption({
+          tooltip:{trigger:'axis'},
+          grid:{left:60,right:20,bottom:20,top:5},
+          legend:{data:['真实值','预测值'],bottom:0,textStyle:{fontSize:10}},
+          xAxis:{type:'category',data:d.y_true.map(function(_,i){return i+1}),axisLabel:{fontSize:9,color:'#888'}},
+          yAxis:{type:'value',axisLabel:{fontSize:9,color:'#888'},splitLine:{lineStyle:{color:'#f0ebe6'}}},
+          series:[
+            {name:'真实值',type:'line',data:d.y_true,lineStyle:{color:'#6f4e37',width:2},symbol:'none'},
+            {name:'预测值',type:'line',data:d.y_pred,lineStyle:{color:'#d4a56a',width:2},symbol:'none'},
+          ]
+        });
+      }
+      toast('训练完成！R² = '+d.r2,'success');
+    } else {
+      document.getElementById('trainResult').style.display='block';
+      document.getElementById('trainResult').innerHTML='<div class="alert alert-error">❌ 训练失败: '+d.message+'</div>';
+      toast('训练失败','error');
+    }
+  });
+}
+
+// ============ 预测 ============
+function loadPredictForm(){
+  fetch('/api/train',{method:'POST'}).then(function(r){return r.json()}).then(function(d){
+    if(d.status!=='success'){document.getElementById('predictForm').innerHTML='<div class="alert alert-error">请先在"训练"页面训练模型</div>';return}
+    var fields=[
+      {k:'traffic',l:'客流量',v:100},{k:'unit_price',l:'单品售价',v:28},{k:'promotion',l:'促销(0/1)',v:0},
+      {k:'holiday',l:'节假日(0/1)',v:0},{k:'quality',l:'品质评分',v:8},{k:'temp',l:'温度°C',v:22},
+      {k:'competitors',l:'竞争对手数',v:2},{k:'is_weekend',l:'周末(0/1)',v:0},{k:'location',l:'位置评分',v:7},
+      {k:'weather_score',l:'天气评分(0.3~1)',v:0.8},
+    ];
+    document.getElementById('predictForm').innerHTML=fields.map(function(f){
+      return '<div class="form-group"><label>'+f.l+'</label><input id="pf_'+f.k+'" type="number" step="0.1" value="'+f.v+'"></div>';
+    }).join('');
+  });
+}
+function doPredict(){
+  var fields=['traffic','unit_price','promotion','holiday','quality','temp','competitors','is_weekend','location','weather_score'];
+  var data={};
+  fields.forEach(function(k){
+    var el=document.getElementById('pf_'+k);
+    data[k]=el?parseFloat(el.value)||0:0;
+  });
+  fetch('/api/predict',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}).then(function(r){return r.json()}).then(function(d){
+    if(d.status==='success'){
+      var p=d.prediction;
+      document.getElementById('predictResult').style.display='block';
+      document.getElementById('predictResult').innerHTML=
+        '<div class="result-box"><div class="big">¥ '+p.toLocaleString()+'</div><div class="sub">预测单日营收</div></div>'+
+        '<div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
+        '<div class="alert alert-info">💡 '+(data.promotion?'促销已开启，预计增收15~35%':'建议尝试小额促销活动')+'</div>'+
+        '<div class="alert alert-info">🌤️ '+(data.weather_score>=0.6?'天气良好，适合室外引流':'天气较差，建议加大线上推广')+'</div>'+
+        '<div class="alert alert-info">💰 单品定价 '+(data.unit_price||'—')+'元，'+(data.unit_price>30?'略高于市场均值':'处于市场合理区间')+'</div>'+
+        '<div class="alert alert-info">👥 客流量 '+(data.traffic||'—')+'人/天，'+(data.traffic>100?'属于高客流水平':'可考虑增加引流渠道')+'</div>'+
+        '</div>';
+      toast('预测完成！营收 ¥'+p.toLocaleString(),'success');
+    } else {
+      document.getElementById('predictResult').style.display='block';
+      document.getElementById('predictResult').innerHTML='<div class="alert alert-error">❌ '+d.message+'</div>';
+    }
+  });
+}
+
+// ============ 初始化 ============
+loadHome();
+loadPredictForm();
+</script>
+</body>
+</html>

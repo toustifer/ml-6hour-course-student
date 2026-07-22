@@ -1,0 +1,21 @@
+# Python / Jupyter
+__pycache__/
+*.pyc
+.pytest_cache/
+.ipynb_checkpoints/
+.virtual_documents/
+
+# Local runtime
+anaconda_projects/
+
+# Archives / temp
+*.zip
+*.tmp
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+
+# Never publish teacher pack if copied by mistake
+教学课程/教师资料/
