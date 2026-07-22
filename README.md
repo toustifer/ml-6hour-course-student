@@ -1,6 +1,6 @@
 # 机器学习 6 小时课 · 学生材料
 
-咖啡馆营收案例：Python 基础 → Pandas → 决策树 / 随机森林 → 评估与调参。
+咖啡馆营收案例：Python 基础 → Pandas → 决策树 / 随机森林 → 评估与调参 → Flask 系统。
 
 面向零基础同学。本仓库**只含学生用教案与数据**，不含教师答案与口播稿。
 
@@ -12,6 +12,7 @@
   day2/   Pandas 与简单特征
   day3/   机器学习概念、决策树、随机森林
   day4/   评估指标、多模型对比、网格搜索、残差
+  day5/   Flask 入门、迷你预测、完整系统走查
 项目内容/  案例相关补充（可选）
 ```
 
@@ -21,7 +22,7 @@
 
 - Anaconda / Miniconda
 - 课程常用环境名：`day1_ml`（Python 3.11 左右）
-- 主要库：`pandas`、`matplotlib`、`scikit-learn`（Day 3–4）
+- 主要库：`pandas`、`matplotlib`、`scikit-learn`（Day 3–4）、`flask`（Day 5）
 
 ```bash
 conda activate day1_ml
